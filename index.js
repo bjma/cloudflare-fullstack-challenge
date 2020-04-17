@@ -12,11 +12,12 @@ class ElementHandler {
     }
 
     // Changes attribute value if @param attributeName is an attribute,
-    // else, do nothing.
+    // or if element is a <title> tag, change the title.
+    // Else, do nothing (empty parameter).
     element(element) {
-        // Get attribute as String
+        // Get element attribute as String 
         const attribute = element.getAttribute(this.attributeName);
-        // If attribute is actually found
+        // If attribute returns a valid attribute
         if (attribute) {
             // Set 'href' attribute to value: 'https://bjma.github.io'
             // It's not a complete website, I know :(
@@ -25,9 +26,15 @@ class ElementHandler {
                 attribute.replace('https://cloudflare.com', 'https://www.linkedin.com/in/brian-j-ma')
             );
         }
+
+        // If our element isn't an attribute, but a title, change title
+        if (element.tagName === 'title') {
+            element.setInnerContent('bjma');
+        }
     }
 
     // Change text value of current `element` to new text
+    // TODO: see if we can do something about saving Variant # 
     text(text) {
         if (!text.lastInTextNode) {
             if (text.text.includes("Return to cloudflare.com")) { // change <a> text
@@ -35,19 +42,17 @@ class ElementHandler {
             }
 
             if (text.text.includes("Variant")) { // change <h1> text
+                //pageNum = text.text.slice(-1); // get page num from last index of text
                 text.replace('Hi, Cloudflare recruitment team!');
             }
 
             if (text.text.includes("take home project")) { // replace <p> text
-                text.replace('Thanks for this fun challenge!')
+                text.replace(`Thanks for this fun challenge! You're currently on Variant ${pageNum}`);
             }
         } else {
             text.replace('');
         }
-        
     }
-
-
 }
 
 /**
@@ -72,7 +77,8 @@ async function handleRequest(request) {
         const rewriter = new HTMLRewriter()
             .on('a#url', new ElementHandler('href'))
             .on('h1#title', new ElementHandler())
-            .on('p#description', new ElementHandler());
+            .on('p#description', new ElementHandler())
+            .on('title', new ElementHandler());
         // Randomly redirect user to either variant A/B with a 50/50 chance
         if (Math.random() < 0.5) {
             // Variant 1
