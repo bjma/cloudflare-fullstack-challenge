@@ -11,12 +11,12 @@ There's two ways to actually check out the project:
 ### wrangler
 We can run our Workers script using the `wrangler` CLI.
 
-Install using `npm`:
+Install `wrangler` using `npm`:
 ``` bash
 npm i @cloudflare/wrangler -g
 ```
 
-Running project in test environment:
+Running project on test environment from project directory:
 ``` bash
 wrangler dev
 ```
