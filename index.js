@@ -34,7 +34,7 @@ class ElementHandler {
     }
 
     // Change text value of current `element` to new text
-    // TODO: see if we can do something about saving Variant # 
+    // TODO: see if we can do something about saving Variant #  
     text(text) {
         if (!text.lastInTextNode) {
             if (text.text.includes("Return to cloudflare.com")) { // change <a> text
@@ -42,12 +42,11 @@ class ElementHandler {
             }
 
             if (text.text.includes("Variant")) { // change <h1> text
-                //pageNum = text.text.slice(-1); // get page num from last index of text
                 text.replace('Hi, Cloudflare recruitment team!');
             }
 
             if (text.text.includes("take home project")) { // replace <p> text
-                text.replace(`Thanks for this fun challenge! You're currently on Variant ${pageNum}`);
+                text.replace("Thanks for this fun challenge!");
             }
         } else {
             text.replace('');
@@ -55,6 +54,7 @@ class ElementHandler {
     }
 }
 
+// TODO: persist URL/cookie implementation
 /**
  * Returns one of two URL variants as new Response 
  * @param {Response} request 
@@ -70,7 +70,7 @@ async function handleRequest(request) {
         const text = await response.text();
         // Parse text to JSON
         const urls = JSON.parse(text);
-        
+
         // Init new HTMLRewriter that handles
         // <a> tags; we use this to change 'href'
         // and 'text' values
@@ -79,6 +79,7 @@ async function handleRequest(request) {
             .on('h1#title', new ElementHandler())
             .on('p#description', new ElementHandler())
             .on('title', new ElementHandler());
+
         // Randomly redirect user to either variant A/B with a 50/50 chance
         if (Math.random() < 0.5) {
             // Variant 1
