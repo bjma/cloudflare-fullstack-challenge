@@ -1,10 +1,10 @@
-# Cloudflare Workers Internship Application: Full-Stack :cloud:
+# :cloud: Cloudflare Workers Internship Application: Full-Stack
 Complete code for Cloudflare's Full-Stack Internship Challenge. Check it out [here]( https://github.com/cloudflare-internship-2020/internship-application-fullstack)!
 
-## What it does :wrench:
+## :wrench: What it does 
 Upon visiting the website, the Workers script `index.js` uses the Fetch API to redirect you to one of two websites in the style of A/B testing, each variant having roughly 50% chance of showing up upon refresh.
 
-## Running the project :rocket:
+## :rocket: Running the project 
 All content is in `index.js`.
 
 There's two ways to actually check out the project:
