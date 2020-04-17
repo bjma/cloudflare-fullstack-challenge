@@ -1,10 +1,6 @@
-// Event listener for catching FetchEvents
-addEventListener('fetch', event => {
-    event.respondWith(handleRequest(event.request))
-});
-
 /**
- * Handler for incoming elements
+ * Handler for incoming elements;
+ * Rewrites attributes + text
  */
 class ElementHandler {
     constructor(attributeName) {
@@ -14,6 +10,7 @@ class ElementHandler {
     // Changes attribute value if @param attributeName is an attribute,
     // or if element is a <title> tag, change the title.
     // Else, do nothing (empty parameter).
+    // From: https://blog.cloudflare.com/introducing-htmlrewriter/
     element(element) {
         // Get element attribute as String 
         const attribute = element.getAttribute(this.attributeName);
@@ -38,7 +35,7 @@ class ElementHandler {
     text(text) {
         if (!text.lastInTextNode) {
             if (text.text.includes("Return to cloudflare.com")) { // change <a> text
-                text.replace('LinkedIn');
+                text.replace('My LinkedIn');
             }
 
             if (text.text.includes("Variant")) { // change <h1> text
@@ -54,7 +51,42 @@ class ElementHandler {
     }
 }
 
-// TODO: persist URL/cookie implementation
+/**
+ * Grabs cookie w/ @param name from request headers
+ * From: // https://developers.cloudflare.com/workers/templates/pages/cookie_extract/
+ * @param {Request} request 
+ * @param {String} name 
+ */
+function getCookie(request, name) {
+    // Return result
+    let result = null;
+    // Retrieve Cookie as string
+    let cookieString = request.headers.get('Cookie');
+    // If cookieString gets valid cookie/not empty string
+    if (cookieString) {
+        // split all our cookies into an array w/o semicolons
+        let cookies = cookieString.split(';');
+        // loop through each cookie to search for cookie w/ name @param name
+        cookies.forEach(cookie => {
+            // get cookie name
+            let cookieName = cookie.split('=')[0].trim();
+            // check if current cookie is the cookie we want
+            if (cookieName === name) {
+                // get value of cookie
+                let cookieVal = cookie.split('=')[1];
+                result = cookieVal;
+            }
+        });
+    }
+    return result;
+}
+
+// Event listener for catching FetchEvents
+addEventListener('fetch', event => {
+    event.respondWith(handleRequest(event.request));
+});
+
+
 /**
  * Returns one of two URL variants as new Response 
  * @param {Response} request 
@@ -64,33 +96,37 @@ async function handleRequest(request) {
     // To parse it as JSON, we get our fetch response as text using .text(),
     // then we can parse it using JSON.parse()
     try {
-        // Fetch url and get response
-        const response = await fetch('https://cfw-takehome.developers.workers.dev/api/variants');
-        // Read our response as text
-        const text = await response.text();
-        // Parse text to JSON
-        const urls = JSON.parse(text);
+        // store variant url on launch to cookie
+        const cookie = getCookie(request, "variant");
 
-        // Init new HTMLRewriter that handles
-        // <a> tags; we use this to change 'href'
-        // and 'text' values
-        const rewriter = new HTMLRewriter()
-            .on('a#url', new ElementHandler('href'))
-            .on('h1#title', new ElementHandler())
-            .on('p#description', new ElementHandler())
-            .on('title', new ElementHandler());
+        // User's first time on site; no cookies stored, just return a variant
+        if (!cookie) {
+            // Fetch url and get response
+            const response = await fetch('https://cfw-takehome.developers.workers.dev/api/variants');
+            // Read our response as text
+            const text = await response.text();
+            // Parse text to JSON
+            const urls = JSON.parse(text);
 
-        // Randomly redirect user to either variant A/B with a 50/50 chance
-        if (Math.random() < 0.5) {
-            // Variant 1
-            const A = await fetch(urls.variants[0]); 
-            //return A;
-            return rewriter.transform(A);
-        } else {
-            // Variant 2
-            const B = await fetch(urls.variants[1]);
-            //return B;
-            return rewriter.transform(B);
+            // Init new HTMLRewriter that handles
+            // <a> tags; we use this to change 'href'
+            // and 'text' values
+            const rewriter = new HTMLRewriter()
+                .on('a#url', new ElementHandler('href'))
+                .on('h1#title', new ElementHandler())
+                .on('p#description', new ElementHandler())
+                .on('title', new ElementHandler());
+
+            // choose variant
+            const variant = (Math.random() < 0.5) ? 0: 1;
+            // fetch variant url
+            const url = await fetch(urls.variants[variant]);
+            // transform variant 
+            const result = rewriter.transform(url);
+            // redirect to variant
+            return result;
+        } else {  
+            return rewriter.transform(cookie);
         }
         
     } catch(err) {
